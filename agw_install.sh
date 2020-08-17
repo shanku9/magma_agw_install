@@ -107,6 +107,7 @@ if [ "$MAGMA_INSTALLED" != "$SUCCESS_MESSAGE" ]; then
   pip3 install ansible
 
   git clone https://github.com/facebookincubator/magma.git /home/$MAGMA_USER/magma
+  sleep 60
   cd /home/$MAGMA_USER/magma
   git checkout v1.1
 
