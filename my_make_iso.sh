@@ -49,4 +49,4 @@ sleep 2
 # Test the image 
 rm testing-image.img
 qemu-img create -f qcow2 testing-image.img 10G
-qemu-system-x86_64 -enable-kvm -smp 4 -m 4096 -net nic -net user -hda testing-image.img -cdrom preseed-debian-9.9.0-amd64-netinst.iso
+qemu-system-x86_64 -enable-kvm -cpu host -m 4096 -net nic -net user -hda testing-image.img -cdrom preseed-debian-9.9.0-amd64-netinst.iso
