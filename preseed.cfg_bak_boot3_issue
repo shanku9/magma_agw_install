@@ -1,6 +1,3 @@
-#
-# SRC > https://www.debian.org/releases/stretch/example-preseed.txt
-#
 # US locale/kbd map
 d-i debian-installer/locale string en_US
 d-i keyboard-configuration/xkb-keymap select us
@@ -29,11 +26,14 @@ d-i passwd/make-user boolean true
 # mkpasswd -m sha-512 <pwd>
 d-i passwd/root-password-crypted password $6$0gkMUDE0OXZYv0$QeV.e1Ogw0FJr1lJ0ch35fxWqMJlCuybs55.nWXMooz0mxB.asAySEV/Qcxt3vPnt4L04ErEh3eRGmH.00fMa0
 
-# To create a normal magma user account
+# To create a normal user account
 d-i passwd/user-fullname string Magma User
 d-i passwd/username string magma
 # mkpasswd -m sha-512 <pwd>
 d-i passwd/user-password-crypted password $6$0gkMUDE0OXZYv0$QeV.e1Ogw0FJr1lJ0ch35fxWqMJlCuybs55.nWXMooz0mxB.asAySEV/Qcxt3vPnt4L04ErEh3eRGmH.00fMa0
+
+# Weak Password 
+d-i user-setup/allow-password-weak boolean true
 
 # Set to true if you want to encrypt the first user's home directory.
 d-i user-setup/encrypt-home boolean false
@@ -45,36 +45,57 @@ d-i clock-setup/ntp boolean true
 
 # use lvm partitioning
 d-i partman-auto/method string lvm
+d-i partman-lvm/device_remove_lvm boolean true
+d-i partman-lvm/confirm boolean true
+d-i partman-lvm/confirm_nooverwrite boolean true
+
+# make lvm the max size
+d-i partman-auto-lvm/guided_size string max
 
 # remove old LVM config warning
 d-i partman-lvm/device_remove_lvm boolean true
 
-# remove any RAID partitioning
-d-i partman-md/device_remove_md boolean true
-
-# And the same goes for the confirmation to write the lvm partitions.
+# the confirmation to write the lvm partitions.
 d-i partman-lvm/confirm boolean true
-d-i partman-lvm/confirm_nooverwrite boolean true
-
+#d-i partman-lvm/confirm_nooverwrite boolean true
 
 # You can choose one of the three predefined partitioning recipes:
 # - atomic: all files in one partition
 # - home:   separate /home partition
 # - multi:  separate /home, /usr, /var, and /tmp partitions
-d-i partman-auto/choose_recipe select atomic
+#d-i partman-auto/choose_recipe select atomic
 
+
+d-i partman-auto/choose_recipe select boot-lvm
+
+# boot 500M ext4
+# swap 4G+
+# / 16G+ ext4
+d-i partman-auto/expert_recipe string               \
+    boot-lvm ::                                     \
+        500 500 500 ext4                            \
+            $primary{ } $bootable{ }                \
+            method{ format } format{ }              \
+            use_filesystem{ } filesystem{ ext4 }    \
+            mountpoint{ /boot }                     \
+        .                                           \
+        4096 4096 8192 linux-swap                   \
+            method{ swap } format{ }                \
+        .                                           \
+        16384 16384 -1 ext4                         \
+            method{ format } format{ }              \
+            use_filesystem{ } filesystem{ ext4 }    \
+            mountpoint{ / }                         \
+        .
+
+# remove any RAID partitioning
+d-i partman-md/device_remove_md boolean true
 
 # don't confirm anything
 d-i partman-partitioning/confirm_write_new_label boolean true
 d-i partman/choose_partition select finish
 d-i partman/confirm boolean true
 d-i partman/confirm_nooverwrite boolean true
-
-# cd rom scan warning
-d-i apt-setup/use_mirror boolean false
-d-i apt-setup/cdrom/set-first boolean false
-d-i apt-setup/cdrom/set-next boolean false   
-d-i apt-setup/cdrom/set-failed boolean false
 
 # setup non-free and contrib repositories
 d-i apt-setup/non-free boolean true
@@ -84,10 +105,10 @@ d-i apt-setup/contrib boolean true
 tasksel tasksel/first multiselect standard, ssh-server
 
 # also install the htop and tcpdump package
-d-i pkgsel/include string openssh-server build-essential sudo htop tcpdump
+d-i pkgsel/include string htop, tcpdump
 
 # upgrade all packages
-# d-i pkgsel/upgrade select none
+d-i pkgsel/upgrade select full-upgrade
 
 # disable popularity contest
 popularity-contest popularity-contest/participate boolean false
@@ -97,21 +118,8 @@ d-i grub-installer/only_debian boolean true
 d-i grub-installer/with_other_os boolean true
 d-i grub-installer/bootdev  string /dev/sda
 
-# Kickoff agw install 
-# Enable root login for ssh 
-# Download temp agw_install.sh 
-
-d-i preseed/late_command string \
-in-target sh -c "echo 'Starting Preseed' >> magma_log.txt"; \
-in-target sh -c 'sed -i "s/^#PermitRootLogin.*\$/PermitRootLogin yes/g" /etc/ssh/sshd_config'; \
-in-target sh -c "echo 'Updated Root Login in /etc/ssh/sshd_config' >> magma_log.txt"; \
-in-target sh -c "wget -O /root/agw_install.sh 'https://raw.githubusercontent.com/shanku9/magma_agw_install/master/agw_install.sh'";sleep 5; \
-in-target sh -c "echo 'agw_install downloaded' >> magma_log.txt"; \
-in-target sh -c "/bin/chmod +x /root/agw_install.sh"; \
-in-target sh -c "echo 'agw_install made executable. Installing agw service' >> magma_log.txt"; \
-in-target sh -c "echo -e'[Unit]\nDescription=AGW Installation\nAfter=network-online.target\nWants=network-online.target\n[Service]\nType=oneshot\nExecStart=/bin/sh /root/agw_install.sh\nUser=root\nGroup=root\n[Install]\nWantedBy=multi-user.target' > /etc/systemd/system/multi-user.target.wants/agw_installation.service"; \
-in-target sh -c "echo 'Preseed Complete!!' >> magma_log.txt";
+# agw install 
+d-i preseed/late_command string wget -P /tmp/ https://raw.githubusercontent.com/facebookincubator/magma/v1.1/lte/gateway/deploy/agw_install.sh; chmod +x /tmp/agw_install.sh; sh /tmp/agw_install.sh
 
 # don't wait for confirm, just reboot when finished
 d-i finish-install/reboot_in_progress note
-

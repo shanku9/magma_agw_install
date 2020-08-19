@@ -1,0 +1,8 @@
+qemu-system-x86_64 -net user -cdrom preseed-debian-9.9.0-amd64-netinst.iso
+qemu-system-x86_64 -enable-kvm -smp core=4 -m 4096 -nographic -nic user -cdrom preseed-debian-9.9.0-amd64-netinst.iso 
+
+
+
+
+qemu-img create -f qcow2 testing-image.img 10G
+qemu-system-x86_64 -enable-kvm -smp 4 -m 4096 -net nic -net user -hda testing-image.img -cdrom preseed-debian-9.9.0-amd64-netinst.iso
