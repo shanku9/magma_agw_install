@@ -123,6 +123,7 @@ if [ "$MAGMA_INSTALLED" != "$SUCCESS_MESSAGE" ]; then
   echo "Deleting boot script if it exists"
   if [ -f "$AGW_INSTALL_CONFIG" ]; then
     rm -rf $AGW_INSTALL_CONFIG
+    reboot
     systemctl daemon-reload
   fi
   echo "Removing Ansible from the machine."
